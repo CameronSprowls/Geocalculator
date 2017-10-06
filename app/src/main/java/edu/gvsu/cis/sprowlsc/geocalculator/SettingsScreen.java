@@ -24,16 +24,17 @@ public class SettingsScreen extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        distanceSelection = getIntent().getIntExtra("distanceSelection", 0);
+        System.out.println(distanceSelection);
+        bearingSelection = getIntent().getIntExtra("bearingSelection", 0);
+
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        fab.setOnClickListener((View v) -> {
                 Intent intent = new Intent();
                 intent.putExtra("distanceSelection", distanceSelection);
                 intent.putExtra("bearingSelection", bearingSelection);
-                setResult(distanceSelection, intent);
+                setResult(RESULT_OK, intent);
                 finish();
-            }
         });
 
         Spinner spinnerDistance = findViewById(R.id.distanceUnits);
@@ -44,6 +45,9 @@ public class SettingsScreen extends AppCompatActivity {
 
         adapterDistance.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDistance.setAdapter(adapterDistance);
+        spinnerDistance.post(() -> {
+            spinnerDistance.setSelection(distanceSelection);
+        });
         spinnerDistance.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -55,12 +59,15 @@ public class SettingsScreen extends AppCompatActivity {
 
             }
         });
-
+        //spinnerDistanece
         ArrayAdapter<CharSequence> adapterBearing = ArrayAdapter.createFromResource(this,
                 R.array.unitsBearing, android.R.layout.simple_spinner_item);
 
         adapterBearing.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerBearing.setAdapter(adapterBearing);
+        spinnerBearing.post(() -> {
+            spinnerBearing.setSelection(bearingSelection);
+        });
         spinnerBearing.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {

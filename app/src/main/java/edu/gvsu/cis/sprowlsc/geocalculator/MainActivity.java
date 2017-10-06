@@ -1,5 +1,6 @@
 package edu.gvsu.cis.sprowlsc.geocalculator;
 
+import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
@@ -7,11 +8,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-
-import static java.lang.Integer.valueOf;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         unitNamesDistance[1] = "Miles";
         unitNamesDistance[0] = "Kilometers";
 
-        unitNamesBearing[1] = "Nils";
+        unitNamesBearing[1] = "Mils";
         unitNamesBearing[0] = "Degrees";
 
         // Set up edit texts
@@ -78,13 +78,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void updateValues(){
-        double[] result = calculate(Double.parseDouble(p1Lat.getText().toString()),
-                Double.parseDouble(p1Long.getText().toString()),
-                Double.parseDouble(p2Lat.getText().toString()),
-                Double.parseDouble(p2Long.getText().toString()));
+
+        //if(p1Lat==0.0)
+        double[] result = calculate();
 
         distanceViewResult.setText(result[0] + " " + unitNamesDistance[unitSelectorDistance]);
         bearingViewResult.setText(result[1] + " " + unitNamesBearing[unitSelectorBearing]);
+
+        InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
     }
 
     private void clearValues(){
@@ -95,22 +97,28 @@ public class MainActivity extends AppCompatActivity {
 
         distanceViewResult.setText("");
         bearingViewResult.setText("");
+        InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
     }
 
-    public double[] calculate(double p1Lat, double p1Long, double p2Lat, double p2Long){
+    public double[] calculate(){
         // Calc the distance between the chords update the other fields
         double[] result = new double[2];
+        try {
+            Location location1 = new Location("");
+            location1.setLatitude(Double.parseDouble(p1Lat.getText().toString()));
+            location1.setLongitude(Double.parseDouble(p1Long.getText().toString()));
 
-        Location location1 = new Location("");
-        location1.setLatitude(p1Lat);
-        location1.setLongitude(p1Long);
+            Location location2 = new Location("");
+            location2.setLatitude(Double.parseDouble(p2Lat.getText().toString()));
+            location2.setLongitude(Double.parseDouble(p2Long.getText().toString()));
 
-        Location location2 = new Location("");
-        location2.setLatitude(p2Lat);
-        location2.setLongitude(p2Long);
+            result[0] = (double) Math.round((location1.distanceTo(location2)/ radius)*100)/100;
+            result[1] = (double) Math.round((location1.bearingTo(location2)*degreeMils)*100)/100;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
-        result[0] = location1.distanceTo(location2)/ radius;
-        result[1] = location1.bearingTo(location2)*degreeMils;
 
         return result;
     }
@@ -133,7 +141,13 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             Intent intent = new Intent(MainActivity.this, SettingsScreen.class);
-            startActivityForResult(intent, unitSelectorDistance);
+            intent.putExtra("distanceSelection", unitSelectorDistance);
+            intent.putExtra("bearingSelection", unitSelectorBearing);
+            try {
+                startActivityForResult(intent, 0);
+            } catch (Exception ex){
+                ex.printStackTrace();
+            }
         }
 
         return super.onOptionsItemSelected(item);
@@ -141,11 +155,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
-        radius = distanceUnits[data.getIntExtra("distanceSelection", 0)];
-        System.out.println(data.getIntExtra("distanceSelection", 0));
-        degreeMils = bearingUnits[data.getIntExtra("bearingSelection", 0)];
+        if(resultCode == RESULT_OK) {
+            radius = distanceUnits[data.getIntExtra("distanceSelection", 0)];
+            System.out.println(data.getIntExtra("distanceSelection", 0));
+            degreeMils = bearingUnits[data.getIntExtra("bearingSelection", 0)];
 
-        unitSelectorDistance = data.getIntExtra("distanceSelection", 0);
-        unitSelectorBearing = data.getIntExtra("bearingSelection", 0);
+            unitSelectorDistance = data.getIntExtra("distanceSelection", 0);
+            unitSelectorBearing = data.getIntExtra("bearingSelection", 0);
+            // Update values with new units
+            updateValues();
+        }
     }
 }
